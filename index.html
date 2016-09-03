@@ -38,7 +38,8 @@
 
 		var mcOptions = {
 			gridSize: 50,
-			maxZoom: 15
+			maxZoom: 15,
+      imagePath: 'crimes-in-uk-on-gmaps/images/m'
 		};
 
 		var markers = [];
@@ -88,9 +89,7 @@
 
           bindInfoWindow(marker, map, infowindow, result[i].category, result[i].month);
         }
-        var options = {
-            imagePath: 'crimes-in-uk-on-gmaps/images/m'
-        };
+
         var mc = new MarkerClusterer(map, markers, mcOptions);
 
         function bindInfoWindow(marker, map, infowindow, category, month) {

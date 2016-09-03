@@ -9,10 +9,14 @@
 			margin: 0;
 			padding: 0;
 		}
-
 		#map {
 			height: 100%;
 		}
+    #legend{
+      background:white;
+      border:1px solid black;
+      padding:10px;
+    }
 	</style>
 	<script src="./markerclusterer.js"></script>
 	<script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
@@ -20,6 +24,7 @@
 
 <body>
 	<div id="map"></div>
+  <div id="legend">Type of crimes</div>
 
 	<script type="text/javascript">
 
@@ -48,7 +53,7 @@
 				content: ""
 			});
 
-      var mainUrlApi = "https://data.police.uk/api/crimes-at-location?date=";
+      var mainUrlApi = "https://data.police.uk/api/crimes-street/all-crime?";
 
       function generateDates(){
         var dates = []
@@ -66,16 +71,6 @@
         return dates;
       }
 
-      function getCurrentDate(){
-        var date = new Date();
-        var year = date.getFullYear();
-        var month = date.getMonth();
-        return {
-         "year":year,
-         "month":month
-       };
-      }
-
 			if (navigator.geolocation) {
 				var geoOptions = function() {
 					return {
@@ -84,17 +79,10 @@
 					}
 				};
 				var geoSuccess = function(position) {
-          var allResults = [];
-          var allDates = generateDates();
-          $.each(generateDates(), function(i,date){
-            $.ajax(mainUrlApi+date+"&lat="+position.coords.latitude+"&lng="+position.coords.longitude)
+            $.ajax(mainUrlApi+"lat="+position.coords.latitude+"&lng="+position.coords.longitude)
             .done(function(result) {
-              allResults.push(result);
-              if(i == allDates.length - 1){ //when all are done
-                handleDataFromPoliceApi(allResults);
-              }
+                handleDataFromPoliceApi(result);
             })
-          })
 				};
 				var geoError = function(position) {
 
@@ -105,40 +93,74 @@
 				navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
 			}
 
-      function handleDataFromPoliceApi(result){
-        for (var j = 0; j < result.length; j++) {
-          for (var i = 0; i < result[j].length; i++) {
-            var dataCategory = result[j][i].category;
-            var dataMonth = result[j][i].month;
-            var dataStreet = result[j][i].location.street.name;
+      // custom pins
+      var images = handleImages();
+      map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(document.getElementById('legend'));
+      var legend = document.getElementById('legend');
 
-            var latLng = new google.maps.LatLng(result[j][i].location.latitude,
-            	result[j][i].location.longitude);
-              console.log(result[j][i].location.latitude)
-              console.log(result[j][i].location.longitude)
-            var marker = new google.maps.Marker({
-            	position: latLng,
-              map:map,
-            	title: dataCategory
-            });
-            markers.push(marker);
-            bindInfoWindow(marker, map, infowindow, dataCategory, dataMonth, dataStreet);
-          }
+      var counter = 0;
+      Object.keys(images).forEach(function (crimeName) {
+          var icon = images[crimeName];
+          var div = document.createElement('div');
+          div.innerHTML = '<img src="' + icon + '"> ' + crimeName;
+          legend.appendChild(div);
+      })
+
+      function handleDataFromPoliceApi(result){
+        for (var i = 0; i < result.length; i++) {
+          var dataCategory = result[i].category;
+          var dataMonth = result[i].month;
+          var dataStreet = result[i].location.street.name;
+
+          var latLng = new google.maps.LatLng(result[i].location.latitude,
+          	result[i].location.longitude);
+
+          var marker = new google.maps.Marker({
+          	position: latLng,
+            map:map,
+          	title: dataCategory,
+            icon: images[dataCategory]
+          });
+          markers.push(marker);
+          bindInfoWindow(marker, map, infowindow, dataCategory, dataMonth, dataStreet);
         }
-      }
 
         var mc = new MarkerClusterer(map, markers, mcOptions);
         function bindInfoWindow(marker, map, infowindow, category, month, street) {
           google.maps.event.addListener(marker, 'click', function() {
             var contentString = '<div id="content"><div id="siteNotice">' +
               '</div><h1 id="firstHeading" class="firstHeading">' + category +
-              '</h1><div id="bodyContent"><p>"' + month + '"</p><p>"' + street + '"</p></div>' +
+              '</h1><div id="bodyContent"><p>"Month: ' + month + '"</p><p>Street: "' + street + '"</p></div>' +
               '</div>';
             map.setCenter(marker.getPosition());
             infowindow.setContent(contentString);
             infowindow.open(map, marker);
           });
         }
+      }
+
+      function handleImages(){
+        var images = {};
+        images["all-crime"] = 'images/Zombie_1.png';
+        images["other-crime"] = 'images/Zombie_1.png';
+        images["bicycle-theft"] = 'images/Zombie_1.png';
+        images["burglary"] = 'images/Zombie_2.png';
+        images["other-theft"] = 'images/Zombie_2.png';
+        images["public-order"] = 'images/Zombie_2.png';
+        images["murder"] = 'images/Zombie_3.png';
+        images["violent-crime"] = 'images/Zombie_3.png';
+        images["theft-from-the-person"] = 'images/Zombie_3.png';
+        images["anti-social-behaviour"] = 'images/Zombie_4.png';
+        images["public-disorder-weapons"] = 'images/Zombie_4.png';
+        images["robbery"] = 'images/Zombie_5.png';
+        images["shoplifting"] = 'images/Zombie_5.png';
+        images["criminal-damage-arson"] = 'images/Zombie_6.png';
+        images["drugs"] = 'images/Zombie_6.png';
+        images["possession-of-weapons"] = 'images/Zombie_6.png';
+        images["kidnapping"] = 'images/Zombie_7.png';
+        images["vehicle-crime"] = 'images/Zombie_7.png';
+        return images;
+      }
 
 		}
 	</script>

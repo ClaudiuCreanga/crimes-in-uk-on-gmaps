@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<style type="text/css">
+		html,
+		body {
+			height: 100%;
+			margin: 0;
+			padding: 0;
+		}
+
+		#map {
+			height: 100%;
+		}
+	</style>
+	<script src="./markerclusterer.js"></script>
+	<script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+	<div id="map"></div>
+
+	<script type="text/javascript">
+		var data = {}
+
+
+
+		var map;
+
+		var options = {
+			center: {
+				lat: 51.5286416,
+				lng: -0.1015987
+			},
+			zoom: 10,
+		}
+
+		var mcOptions = {
+			gridSize: 50,
+			maxZoom: 15
+		};
+
+		var markers = [];
+
+		function initMap() {
+			map = new google.maps.Map(document.getElementById('map'), options);
+
+			var infowindow = new google.maps.InfoWindow({
+				content: ""
+			});
+
+			if (navigator.geolocation) {
+				var geoOptions = function() {
+					return {
+						maximumAge: 5 * 60 * 1000,
+						timeout: 10 * 1000
+					}
+				};
+
+				var geoSuccess = function(position) {
+          $.ajax( "https://data.police.uk/api/crimes-at-location?date=2016-03&lat="+position.coords.latitude+"&lng="+position.coords.longitude)
+            .done(function(result) {
+              handleDataFromPoliceApi(result);
+            })
+				};
+				var geoError = function(position) {
+
+					return;
+
+				};
+
+				navigator.geolocation.getCurrentPosition(geoSuccess, geoError, geoOptions);
+			}
+
+      function handleDataFromPoliceApi(result){
+        for (var i = 0; i < result.length; i++) {
+          var dataPhoto = result[i].category;
+
+          var latLng = new google.maps.LatLng(result[i].location.latitude,
+          	result[i].location.longitude);
+
+          var marker = new google.maps.Marker({
+          	position: latLng,
+          	title: result[i].category
+          });
+          markers.push(marker);
+
+          bindInfoWindow(marker, map, infowindow, result[i].category, result[i].month);
+        }
+
+        var mc = new MarkerClusterer(map, markers, mcOptions);
+
+        function bindInfoWindow(marker, map, infowindow, category, month) {
+          google.maps.event.addListener(marker, 'click', function() {
+            var contentString = '<div id="content"><div id="siteNotice">' +
+              '</div><h1 id="firstHeading" class="firstHeading">' + category +
+              '</h1><div id="bodyContent"><img src="' + month + '" /></div>' +
+              '</div>';
+
+            infowindow.setContent(contentString);
+            infowindow.open(map, marker);
+          });
+        }
+      }
+
+		}
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCz3PtfsIRnrl9FLJm_PWJNrv0ovjaey_U &callback=initMap">
+	</script>
+</body>
+
+</html>

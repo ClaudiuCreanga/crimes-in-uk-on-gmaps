@@ -35,7 +35,7 @@
 
 		var mcOptions = {
 			gridSize: 50,
-			maxZoom: 7,
+			maxZoom: 17,
       imagePath: 'images/m'
 		};
 
@@ -85,13 +85,16 @@
 				};
 				var geoSuccess = function(position) {
           var allResults = [];
+          var allDates = generateDates();
           $.each(generateDates(), function(i,date){
             $.ajax(mainUrlApi+date+"&lat="+position.coords.latitude+"&lng="+position.coords.longitude)
             .done(function(result) {
               allResults.push(result);
+              if(i == allDates.length - 1){ //when all are done
+                handleDataFromPoliceApi(allResults);
+              }
             })
           })
-          handleDataFromPoliceApi(allResults);
 				};
 				var geoError = function(position) {
 
@@ -103,42 +106,39 @@
 			}
 
       function handleDataFromPoliceApi(result){
-        console.log(result)
         for (var j = 0; j < result.length; j++) {
-          console.log(result[j])
           for (var i = 0; i < result[j].length; i++) {
             var dataCategory = result[j][i].category;
-            console.log(dataCategory)
-
             var dataMonth = result[j][i].month;
+            var dataStreet = result[j][i].location.street.name;
 
             var latLng = new google.maps.LatLng(result[j][i].location.latitude,
             	result[j][i].location.longitude);
-              console.log(latLng)
-
+              console.log(result[j][i].location.latitude)
+              console.log(result[j][i].location.longitude)
             var marker = new google.maps.Marker({
             	position: latLng,
+              map:map,
             	title: dataCategory
             });
             markers.push(marker);
-
-            bindInfoWindow(marker, map, infowindow, dataCategory, dataMonth);
+            bindInfoWindow(marker, map, infowindow, dataCategory, dataMonth, dataStreet);
           }
         }
+      }
 
         var mc = new MarkerClusterer(map, markers, mcOptions);
-        function bindInfoWindow(marker, map, infowindow, category, month) {
+        function bindInfoWindow(marker, map, infowindow, category, month, street) {
           google.maps.event.addListener(marker, 'click', function() {
             var contentString = '<div id="content"><div id="siteNotice">' +
               '</div><h1 id="firstHeading" class="firstHeading">' + category +
-              '</h1><div id="bodyContent"><img src="' + month + '" /></div>' +
+              '</h1><div id="bodyContent"><p>"' + month + '"</p><p>"' + street + '"</p></div>' +
               '</div>';
-
+            map.setCenter(marker.getPosition());
             infowindow.setContent(contentString);
             infowindow.open(map, marker);
           });
         }
-      }
 
 		}
 	</script>
